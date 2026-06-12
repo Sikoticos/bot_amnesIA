@@ -6,37 +6,20 @@
 <title>Mi IA</title>
 
 <style>
-:root {
-    --bg: #f2f2f7;
-    --text: #111;
-    --user: #007aff;
-    --ai: #ffffff;
-}
-
-.dark {
-    --bg: #0c0c0c;
-    --text: #f2f2f7;
-    --user: #0a84ff;
-    --ai: #1c1c1e;
-}
-
 body {
     margin: 0;
     font-family: -apple-system, sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    background: #f2f2f7;
 }
 
-/* APP */
 .app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
     max-width: 600px;
     margin: auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-/* HEADER */
 .header {
     padding: 15px;
     font-weight: bold;
@@ -45,18 +28,28 @@ body {
     border-bottom: 1px solid #ddd;
 }
 
-/* CHAT */
 .chat {
     flex: 1;
     overflow-y: auto;
     padding: 15px;
 }
 
-/* MENSAJES */
+/* animación */
 .message {
     display: flex;
     margin-bottom: 12px;
     animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .user {
@@ -64,21 +57,21 @@ body {
 }
 
 .bubble {
-    padding: 10px 12px;
+    padding: 10px;
     border-radius: 14px;
     max-width: 75%;
 }
 
 .user .bubble {
-    background: var(--user);
+    background: #007aff;
     color: white;
 }
 
 .ai .bubble {
-    background: var(--ai);
+    background: #ffffff;
 }
 
-/* INPUT */
+/* input */
 .input-area {
     display: flex;
     padding: 10px;
@@ -93,16 +86,100 @@ input {
     border: 1px solid #ccc;
 }
 
-input:focus {
-    border-color: #007aff;
-    box-shadow: 0 0 0 2px rgba(0,122,255,0.2);
-    outline: none;
-}
-
-/* BOTÓN */
 button {
-    background: var(--user);
+    background: #007aff;
     color: white;
     border: none;
-    padding: 10px 14px;
+    padding: 10px;
     border-radius: 12px;
+}
+
+/* loader */
+.loader {
+    font-size: 14px;
+    padding-left: 10px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="header">
+    🤖 Mi IA
+</div>
+
+<div id="chat" class="chat"></div>
+
+<div id="loader" class="loader" style="display:none;">
+    IA escribiendo...
+</div>
+
+<div class="input-area">
+    <input id="input" placeholder="Escribe..." onkeydown="if(event.key=='Enter'){enviar()}">
+    <button onclick="enviar()">Enviar</button>
+</div>
+
+</div>
+
+<script>
+
+var chat = document.getElementById("chat");
+var loader = document.getElementById("loader");
+
+// memoria
+function getHist(){
+    var data = localStorage.getItem("chat");
+    if(!data) return [];
+    return JSON.parse(data);
+}
+
+function setHist(h){
+    localStorage.setItem("chat", JSON.stringify(h));
+}
+
+// render seguro
+function render(){
+    var h = getHist();
+    chat.innerHTML = "";
+
+    for(var i=0;i<h.length;i++){
+
+        var div = document.createElement("div");
+        div.className = "message " + (h[i].role === "user" ? "user" : "ai");
+
+        var bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = h[i].content;
+
+        div.appendChild(bubble);
+        chat.appendChild(div);
+    }
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+// enviar
+async function enviar(){
+
+    var input = document.getElementById("input");
+    var texto = input.value.trim();
+
+    if(!texto) return;
+
+    input.value = "";
+
+    var hist = getHist();
+
+    hist.push({role:"user", content:texto});
+    setHist(hist);
+
+    render();
+
+    loader.style.display = "block";
+
+    try{
+
+        var res = await fetch("/chat", {
