@@ -1,29 +1,34 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from openai import OpenAI
 
+# API Key de NaN
 NAN_API_KEY = os.getenv("NAN_API_KEY")
 
+# Cliente IA
 client = OpenAI(
     api_key=NAN_API_KEY,
     base_url="https://api.nan.builders/v1"
 )
 
+# Flask
 app = Flask(__name__)
 
+# Ruta principal (web)
 @app.route("/")
 def home():
-    return open("index.html").read()
+    return render_template("index.html")
 
+# Endpoint para el chat
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
-    texto = data["texto"]
+    texto = data.get("texto", "")
 
     respuesta = client.chat.completions.create(
         model="qwen3.6",
         messages=[
-            {"role": "system", "content": "Eres un asistente útil, técnico y claro."},
+            {"role": "system", "content": "Eres un asistente útil, claro y técnico."},
             {"role": "user", "content": texto}
         ]
     )
@@ -32,5 +37,6 @@ def chat():
         "respuesta": respuesta.choices[0].message.content
     })
 
+# Arranque servidor
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000)
