@@ -1,51 +1,300 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Mi Chat IA</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mi Asistente IA</title>
     <style>
-        body {
-            font-family: Arial;
-            margin: 20px;
+        * {
+            box-sizing: border-box;
         }
-        #chat p {
-            margin: 5px 0;
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+        .app {
+            max-width: 900px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .clear-btn {
+            border: none;
+            background: #111827;
+            color: white;
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .clear-btn:hover {
+            background: #1f2937;
+        }
+
+        .chat-box {
+            flex: 1;
+            background: white;
+            border-radius: 18px;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+        .message-row {
+            display: flex;
+            margin-bottom: 14px;
+        }
+
+        .message-row.user {
+            justify-content: flex-end;
+        }
+
+        .bubble {
+            max-width: 75%;
+            padding: 12px 14px;
+            border-radius: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message-row.user .bubble {
+            background: #2563eb;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-row.assistant .bubble {
+            background: #eef2ff;
+            color: #111827;
+            border-bottom-left-radius: 4px;
+        }
+
+        .input-area {
+            margin-top: 16px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .input {
+            flex: 1;
+            border: 1px solid #d1d5db;
+            border-radius: 14px;
+            padding: 14px 16px;
+            font-size: 16px;
+            outline: none;
+            background: white;
+        }
+
+        .input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        .send-btn {
+            border: none;
+            background: #2563eb;
+            color: white;
+            padding: 14px 18px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .send-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .thinking {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .empty-state {
+            color: #6b7280;
+            text-align: center;
+            margin-top: 60px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .app {
+                padding: 12px;
+            }
+
+            .title {
+                font-size: 20px;
+            }
+
+            .bubble {
+                max-width: 88%;
+                font-size: 15px;
+            }
+
+            .input-area {
+                flex-direction: column;
+            }
+
+            .send-btn,
+            .clear-btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="app">
+        <div class="header">
+            <div>
+                <div class="title">Mi Asistente IA 🤖</div>
+                <div class="subtitle">Versión web personal con memoria en este dispositivo</div>
+            </div>
+            <button class="clear-btn" onclick="limpiarChat()">Limpiar chat</button>
+        </div>
 
-<h1>Mi Asistente IA 🤖</h1>
+        <div id="chat" class="chat-box"></div>
+        <div id="thinking" class="thinking" style="display:none;">Pensando...</div>
 
-<div id="chat"></div>
+        <div class="input-area">
+            <input
+                id="input"
+                class="input"
+                type="text"
+                placeholder="Escribe aquí..."
+                onkeydown="if(event.key==='Enter'){ enviar(); }"
+            />
+            <button class="send-btn" onclick="enviar()">Enviar</button>
+        </div>
+    </div>
 
-<input id="input" placeholder="Escribe algo..." />
-<button onclick="enviar()">Enviar</button>
+    <script>
+        const chatEl = document.getElementById("chat");
+        const inputEl = document.getElementById("input");
+        const thinkingEl = document.getElementById("thinking");
 
-<script>
-async function enviar() {
-    const input = document.getElementById("input")
-    const mensaje = input.value
+        function getHistorial() {
+            const guardado = localStorage.getItem("historial_chat_ia");
+            return guardado ? JSON.parse(guardado) : [];
+        }
 
-    const chat = document.getElementById("chat")
-    chat.innerHTML += "<p><b>Tú:</b> " + mensaje + "</p>"
+        function setHistorial(historial) {
+            localStorage.setItem("historial_chat_ia", JSON.stringify(historial));
+        }
 
-    const respuesta = await fetch("/chat", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ texto: mensaje })
-    })
+        function escapeHtml(text) {
+            const div = document.createElement("div");
+            div.innerText = text;
+            return div.innerHTML;
+        }
 
-    const data = await respuesta.json()
+        function renderChat() {
+            const historial = getHistorial();
 
-    chat.innerHTML += "<p><b>IA:</b> " + data.respuesta + "</p>"
+            if (!historial.length) {
+                chatEl.innerHTML = `
+                    <div class="empty-state">
+                        <p><strong>Tu chat está listo.</strong></p>
+                        <p>Escribe algo y empezaré a responder con contexto dentro de este dispositivo.</p>
+                    </div>
+                `;
+                return;
+            }
 
-    input.value = ""
-}
-</script>
+            chatEl.innerHTML = historial.map(msg => `
+                <div class="message-row ${msg.role}">
+                    <div class="bubble">${escapeHtml(msg.content)}</div>
+                </div>
+            `).join("");
 
+            chatEl.scrollTop = chatEl.scrollHeight;
+        }
+
+        async function enviar() {
+            const texto = inputEl.value.trim();
+            if (!texto) return;
+
+            const historial = getHistorial();
+
+            historial.push({
+                role: "user",
+                content: texto
+            });
+
+            setHistorial(historial);
+            renderChat();
+
+            inputEl.value = "";
+            thinkingEl.style.display = "block";
+
+            try {
+                const res = await fetch("/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        texto,
+                        historial
+                    })
+                });
+
+                const data = await res.json();
+
+                historial.push({
+                    role: "assistant",
+                    content: data.respuesta || "No he podido generar respuesta."
+                });
+
+                setHistorial(historial);
+                renderChat();
+            } catch (error) {
+                historial.push({
+                    role: "assistant",
+                    content: "Ha ocurrido un error al contactar con la IA."
+                });
+
+                setHistorial(historial);
+                renderChat();
+            } finally {
+                thinkingEl.style.display = "none";
+            }
+        }
+
+        function limpiarChat() {
+            localStorage.removeItem("historial_chat_ia");
+            renderChat();
+        }
+
+        renderChat();
+    </script>
 </body>
 </html>
-        messages=[
-            {"role": "system", "content": "Eres un asistente útil, claro y técnico."},
