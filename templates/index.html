@@ -17,7 +17,7 @@ body {
     margin: auto;
     display: flex;
     flex-direction: column;
-    height: 100dvh; /* 🔥 fix móvil */
+    height: 100dvh;
 }
 
 .header {
@@ -26,7 +26,7 @@ body {
     display: flex;
     justify-content: space-between;
     border-bottom: 1px solid #ddd;
-    background: #fff;
+    background: white;
 }
 
 .chat {
@@ -35,11 +35,9 @@ body {
     padding: 15px;
 }
 
-/* MENSAJES */
 .message {
     display: flex;
     margin-bottom: 12px;
-    animation: fadeIn 0.2s;
 }
 
 .user {
@@ -63,13 +61,12 @@ body {
     background: white;
 }
 
-/* INPUT */
 .input-area {
     display: flex;
     padding: 10px;
     gap: 8px;
     border-top: 1px solid #ddd;
-    background: #fff;
+    background: white;
 }
 
 input {
@@ -83,22 +80,17 @@ button {
     background: #007aff;
     color: white;
     border: none;
-    padding: 10px 14px;
+    padding: 10px;
     border-radius: 12px;
 }
 
-/* LOADER */
 .loader {
+    padding-left: 15px;
     font-size: 14px;
-    padding-left: 10px;
-}
-
-/* animación */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
+    opacity: 0.7;
 }
 </style>
+
 </head>
 
 <body>
@@ -127,7 +119,6 @@ button {
 
 var chat = document.getElementById("chat");
 var loader = document.getElementById("loader");
-var input = document.getElementById("input");
 
 function getHist(){
     var data = localStorage.getItem("chat");
@@ -143,8 +134,9 @@ function render(){
     chat.innerHTML = "";
 
     for(var i=0;i<h.length;i++){
+
         var div = document.createElement("div");
-        div.className = "message " + (h[i].role === "user" ? "user":"ai");
+        div.className = "message " + (h[i].role === "user" ? "user" : "ai");
 
         var bubble = document.createElement("div");
         bubble.className = "bubble";
@@ -157,31 +149,50 @@ function render(){
     chat.scrollTop = chat.scrollHeight;
 }
 
+/* ✅ ANIMACIÓN REAL SIN BLOQUEO */
 async function typeWriter(text){
 
-    var hist = getHist();
-    hist.push({role:"assistant",content:""});
-    setHist(hist);
-    render();
+    var div = document.createElement("div");
+    div.className = "message ai";
 
-    var index = hist.length - 1;
-    var current = "";
+    var bubble = document.createElement("div");
+    bubble.className = "bubble";
+
+    div.appendChild(bubble);
+    chat.appendChild(div);
+
+    var hist = getHist();
+    hist.push({role:"assistant", content:""});
+    setHist(hist);
+
+    let current = "";
 
     for(let i=0;i<text.length;i++){
+
         current += text[i];
+        bubble.textContent = current;
 
-        var h = getHist();
-        h[index].content = current;
-        setHist(h);
+        // actualizar SOLO el último mensaje
+        hist[hist.length - 1].content = current;
+        setHist(hist);
 
-        render();
-        await new Promise(r => setTimeout(r, 10));
+        // ✅ SCROLL FORZADO (clave para evitar “lag visual”)
+        chat.scrollTop = chat.scrollHeight;
+
+        let delay = 8;
+
+        if(text[i] === "." || text[i] === ",") delay = 30;
+        if(text[i] === "\n") delay = 20;
+
+        await new Promise(r => setTimeout(r, delay));
     }
 }
 
 async function enviar(){
 
+    var input = document.getElementById("input");
     var texto = input.value.trim();
+
     if(!texto) return;
 
     input.value = "";
@@ -190,11 +201,12 @@ async function enviar(){
 
     hist.push({role:"user",content:texto});
     setHist(hist);
+
     render();
 
     loader.style.display = "block";
 
-    try{
+    try {
         var res = await fetch("/chat",{
             method:"POST",
             headers:{"Content-Type":"application/json"},
@@ -227,4 +239,3 @@ render();
 
 </body>
 </html>
-``
