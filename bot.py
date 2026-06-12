@@ -1,10 +1,7 @@
 import os
-import logging
-from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
+from flask import Flask, request, jsonify
 from openai import OpenAI
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 NAN_API_KEY = os.getenv("NAN_API_KEY")
 
 client = OpenAI(
@@ -12,27 +9,28 @@ client = OpenAI(
     base_url="https://api.nan.builders/v1"
 )
 
-logging.basicConfig(level=logging.INFO)
+app = Flask(__name__)
 
-async def manejar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    texto = update.message.text
+@app.route("/")
+def home():
+    return open("index.html").read()
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.json
+    texto = data["texto"]
 
     respuesta = client.chat.completions.create(
         model="qwen3.6",
         messages=[
-            {"role": "system", "content": "Eres un asistente útil, claro y técnico."},
+            {"role": "system", "content": "Eres un asistente útil, técnico y claro."},
             {"role": "user", "content": texto}
-        ],
-        max_tokens=500
+        ]
     )
 
-    await update.message.reply_text(respuesta.choices[0].message.content)
-
+    return jsonify({
+        "respuesta": respuesta.choices[0].message.content
+    })
 
 if __name__ == "__main__":
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar))
-
-    print("Bot funcionando...")
-    app.run_polling()
+    app.run(host="0.0.0.0", port=3000)
