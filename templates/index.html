@@ -2,46 +2,33 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mi IA</title>
 
 <style>
 body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: -apple-system, sans-serif;
     background: #f2f2f7;
-    color: #111;
 }
 
-/* APP */
 .app {
-    max-width: 720px;
+    max-width: 600px;
     margin: auto;
-    height: 100vh;
     display: flex;
     flex-direction: column;
+    height: 100dvh; /* 🔥 fix móvil */
 }
 
-/* HEADER */
 .header {
     padding: 15px;
-    font-weight: 700;
+    font-weight: bold;
     display: flex;
     justify-content: space-between;
-    align-items: center;
     border-bottom: 1px solid #ddd;
-    background: #f2f2f7;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    background: #fff;
 }
 
-.header-actions {
-    display: flex;
-    gap: 8px;
-}
-
-/* CHAT */
 .chat {
     flex: 1;
     overflow-y: auto;
@@ -52,25 +39,19 @@ body {
 .message {
     display: flex;
     margin-bottom: 12px;
-    animation: fadeIn 0.25s ease;
+    animation: fadeIn 0.2s;
 }
 
 .user {
     justify-content: flex-end;
 }
 
-.ai {
-    justify-content: flex-start;
-}
-
 .bubble {
     padding: 10px 12px;
     border-radius: 14px;
-    max-width: 78%;
+    max-width: 75%;
     line-height: 1.6;
     white-space: pre-wrap;
-    word-wrap: break-word;
-    box-sizing: border-box;
 }
 
 .user .bubble {
@@ -79,9 +60,7 @@ body {
 }
 
 .ai .bubble {
-    background: #ffffff;
-    color: #111;
-    border: 1px solid #ececec;
+    background: white;
 }
 
 /* INPUT */
@@ -90,7 +69,7 @@ body {
     padding: 10px;
     gap: 8px;
     border-top: 1px solid #ddd;
-    background: #f2f2f7;
+    background: #fff;
 }
 
 input {
@@ -98,14 +77,6 @@ input {
     padding: 12px;
     border-radius: 12px;
     border: 1px solid #ccc;
-    font-size: 15px;
-    box-sizing: border-box;
-}
-
-input:focus {
-    border-color: #007aff;
-    box-shadow: 0 0 0 2px rgba(0,122,255,0.2);
-    outline: none;
 }
 
 button {
@@ -114,98 +85,18 @@ button {
     border: none;
     padding: 10px 14px;
     border-radius: 12px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-button:active {
-    transform: scale(0.96);
-}
-
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
 }
 
 /* LOADER */
 .loader {
     font-size: 14px;
-    padding: 0 15px 10px 15px;
-    opacity: 0.75;
-    display: none;
+    padding-left: 10px;
 }
 
-/* CURSOR de escritura */
-.typing-cursor::after {
-    content: "▍";
-    margin-left: 2px;
-    animation: blink 0.8s infinite;
-}
-
-/* ANIMACIONES */
+/* animación */
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(6px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes blink {
-    0% { opacity: 1; }
-    50% { opacity: 0.2; }
-    100% { opacity: 1; }
-}
-
-/* MODO OSCURO */
-body.dark {
-    background: #0f1115;
-    color: #f5f5f5;
-}
-
-body.dark .header,
-body.dark .input-area {
-    background: #0f1115;
-    border-color: #262a33;
-}
-
-body.dark .ai .bubble {
-    background: #1b1f27;
-    color: #f5f5f5;
-    border: 1px solid #2a2f39;
-}
-
-body.dark input {
-    background: #171a21;
-    color: #fff;
-    border-color: #303544;
-}
-
-body.dark .chat {
-    background: #0f1115;
-}
-
-/* RESPONSIVE */
-@media (max-width: 640px) {
-    .app {
-        max-width: 100%;
-    }
-
-    .bubble {
-        max-width: 88%;
-    }
-
-    .header {
-        font-size: 16px;
-    }
-
-    input {
-        font-size: 16px;
-    }
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>
 </head>
@@ -214,13 +105,126 @@ body.dark .chat {
 
 <div class="app">
 
-    <div class="header">
-        <div>🤖 Mi IA</div>
-        <div class="header-actions">
-            <button onclick="toggleModo()">🌓</button>
-            <button onclick="limpiar()">🗑</button>
-        </div>
-    </div>
+<div class="header">
+    🤖 Mi IA
+    <button onclick="limpiar()">🗑</button>
+</div>
 
-    <div id="chat" class="chat"></div>
+<div id="chat" class="chat"></div>
 
+<div id="loader" class="loader" style="display:none;">
+    IA escribiendo...
+</div>
+
+<div class="input-area">
+    <input id="input" placeholder="Escribe..." onkeydown="if(event.key=='Enter'){enviar()}">
+    <button onclick="enviar()">Enviar</button>
+</div>
+
+</div>
+
+<script>
+
+var chat = document.getElementById("chat");
+var loader = document.getElementById("loader");
+var input = document.getElementById("input");
+
+function getHist(){
+    var data = localStorage.getItem("chat");
+    return data ? JSON.parse(data) : [];
+}
+
+function setHist(h){
+    localStorage.setItem("chat", JSON.stringify(h));
+}
+
+function render(){
+    var h = getHist();
+    chat.innerHTML = "";
+
+    for(var i=0;i<h.length;i++){
+        var div = document.createElement("div");
+        div.className = "message " + (h[i].role === "user" ? "user":"ai");
+
+        var bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = h[i].content;
+
+        div.appendChild(bubble);
+        chat.appendChild(div);
+    }
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+async function typeWriter(text){
+
+    var hist = getHist();
+    hist.push({role:"assistant",content:""});
+    setHist(hist);
+    render();
+
+    var index = hist.length - 1;
+    var current = "";
+
+    for(let i=0;i<text.length;i++){
+        current += text[i];
+
+        var h = getHist();
+        h[index].content = current;
+        setHist(h);
+
+        render();
+        await new Promise(r => setTimeout(r, 10));
+    }
+}
+
+async function enviar(){
+
+    var texto = input.value.trim();
+    if(!texto) return;
+
+    input.value = "";
+
+    var hist = getHist();
+
+    hist.push({role:"user",content:texto});
+    setHist(hist);
+    render();
+
+    loader.style.display = "block";
+
+    try{
+        var res = await fetch("/chat",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                texto:texto,
+                historial:hist
+            })
+        });
+
+        var data = await res.json();
+
+        loader.style.display = "none";
+
+        await typeWriter(data.respuesta || "Error");
+
+    } catch(e){
+        loader.style.display = "none";
+        console.log(e);
+    }
+}
+
+function limpiar(){
+    localStorage.removeItem("chat");
+    render();
+}
+
+render();
+
+</script>
+
+</body>
+</html>
+``
