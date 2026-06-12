@@ -1,31 +1,51 @@
-import os
-from flask import Flask, request, jsonify, render_template
-from openai import OpenAI
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mi Chat IA</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+        }
+        #chat p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
 
-# API Key de NaN
-NAN_API_KEY = os.getenv("NAN_API_KEY")
+<h1>Mi Asistente IA 🤖</h1>
 
-# Cliente IA
-client = OpenAI(
-    api_key=NAN_API_KEY,
-    base_url="https://api.nan.builders/v1"
-)
+<div id="chat"></div>
 
-# Flask
-app = Flask(__name__)
+<input id="input" placeholder="Escribe algo..." />
+<button onclick="enviar()">Enviar</button>
 
-# Ruta principal (web)
-@app.route("/")
-def home():
-    return render_template("index.html")
+<script>
+async function enviar() {
+    const input = document.getElementById("input")
+    const mensaje = input.value
 
-# Endpoint para el chat
-@app.route("/chat", methods=["POST"])
-def chat():
-    data = request.json
-    texto = data.get("texto", "")
+    const chat = document.getElementById("chat")
+    chat.innerHTML += "<p><b>Tú:</b> " + mensaje + "</p>"
 
-    respuesta = client.chat.completions.create(
-        model="qwen3.6",
+    const respuesta = await fetch("/chat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ texto: mensaje })
+    })
+
+    const data = await respuesta.json()
+
+    chat.innerHTML += "<p><b>IA:</b> " + data.respuesta + "</p>"
+
+    input.value = ""
+}
+</script>
+
+</body>
+</html>
         messages=[
             {"role": "system", "content": "Eres un asistente útil, claro y técnico."},
