@@ -9,49 +9,59 @@
 :root {
     --bg: #f2f2f7;
     --text: #111;
+    --glass: rgba(255,255,255,0.6);
+    --border: rgba(255,255,255,0.4);
     --user: #007aff;
-    --ai: #ffffff;
+    --ai: rgba(255,255,255,0.4);
 }
 
 .dark {
     --bg: #0c0c0c;
     --text: #f2f2f7;
+    --glass: rgba(30,30,30,0.6);
+    --border: rgba(255,255,255,0.1);
     --user: #0a84ff;
-    --ai: #1c1c1e;
+    --ai: rgba(50,50,50,0.4);
 }
 
 body {
     margin: 0;
-    font-family: -apple-system, sans-serif;
+    font-family: -apple-system, system-ui;
     background: var(--bg);
     color: var(--text);
 }
 
 .app {
+    max-width: 650px;
+    margin: auto;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    max-width: 600px;
-    margin: auto;
 }
 
+/* HEADER GLASS */
 .header {
-    padding: 15px;
-    font-weight: bold;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: var(--glass);
+    border-bottom: 1px solid var(--border);
+    padding: 14px;
     display: flex;
     justify-content: space-between;
-    border-bottom: 1px solid #ddd;
+    font-weight: 600;
 }
 
+/* CHAT */
 .chat {
     flex: 1;
     overflow-y: auto;
     padding: 15px;
 }
 
+/* MENSAJES */
 .message {
     display: flex;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .user {
@@ -59,9 +69,11 @@ body {
 }
 
 .bubble {
-    padding: 10px 12px;
-    border-radius: 14px;
+    padding: 12px 14px;
+    border-radius: 18px;
     max-width: 75%;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 
 .user .bubble {
@@ -71,32 +83,54 @@ body {
 
 .ai .bubble {
     background: var(--ai);
+    border: 1px solid var(--border);
 }
 
+/* INPUT GLASS */
 .input-area {
-    display: flex;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: var(--glass);
+    border-top: 1px solid var(--border);
     padding: 10px;
+    display: flex;
     gap: 8px;
-    border-top: 1px solid #ddd;
 }
 
 input {
     flex: 1;
-    padding: 10px;
-    border-radius: 12px;
-    border: 1px solid #ccc;
+    padding: 12px;
+    border-radius: 20px;
+    border: none;
+    outline: none;
+    background: #ffffffcc;
+}
+
+.dark input {
+    background: #1c1c1e;
+    color: white;
 }
 
 button {
+    border: none;
     background: var(--user);
     color: white;
-    border: none;
     padding: 10px 14px;
-    border-radius: 12px;
+    border-radius: 20px;
     cursor: pointer;
 }
-</style>
 
+.toggle {
+    cursor: pointer;
+}
+
+/* loader */
+.loader {
+    font-size: 13px;
+    opacity: 0.6;
+    margin-left: 10px;
+}
+</style>
 </head>
 
 <body>
@@ -105,96 +139,15 @@ button {
 
 <div class="header">
     🤖 Mi IA
-    <button onclick="toggleModo()">🌓</button>
+    <span class="toggle" onclick="toggleModo()">🌙</span>
 </div>
 
 <div id="chat" class="chat"></div>
 
+<div id="loader" class="loader" style="display:none;">
+    IA escribiendo...
+</div>
+
 <div class="input-area">
-    <input id="input" placeholder="Escribe..." onkeydown="if(event.key==='Enter'){enviar()}">
-    <button onclick="enviar()">Enviar</button>
-</div>
-
-</div>
-
-<script>
-const chat = document.getElementById("chat")
-
-// modo oscuro automático
-if(window.matchMedia("(prefers-color-scheme: dark)").matches){
-    document.body.classList.add("dark")
-}
-
-function toggleModo(){
-    document.body.classList.toggle("dark")
-}
-
-// memoria
-function getHist(){
-    return JSON.parse(localStorage.getItem("chat") || "[]")
-}
-
-function setHist(h){
-    localStorage.setItem("chat", JSON.stringify(h))
-}
-
-function render(){
-    const h = getHist()
-
-    chat.innerHTML = h.map(m => `
-        <div class="message ${m.role === "user" ? "user" : "ai"}">
-            <div class="bubble">${m.content}</div>
-        </div>
-    `).join("")
-
-    chat.scrollTop = chat.scrollHeight
-}
-
-async function enviar(){
-
-    const input = document.getElementById("input")
-    const texto = input.value.trim()
-    if(!texto) return
-
-    input.value = ""
-
-    const hist = getHist()
-
-    hist.push({role: "user", content: texto})
-    setHist(hist)
-
-    render()
-
-    try{
-        const res = await fetch("/chat", {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({
-                texto: texto,
-                historial: hist
-            })
-        })
-
-        const data = await res.json()
-
-        hist.push({
-            role: "assistant",
-            content: data.respuesta || "Error en respuesta"
-        })
-
-    } catch(e){
-        hist.push({
-            role: "assistant",
-            content: "Error conectando con la IA"
-        })
-    }
-
-    setHist(hist)
-    render()
-}
-
-render()
-</script>
-
-</body>
-</html>
+    <input id="input" placeholder="Escribe..."
+        onkeydown="if(event.key==='Enter'){enviar()}">
