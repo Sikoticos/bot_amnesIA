@@ -12,6 +12,7 @@ body {
     background: #f2f2f7;
 }
 
+/* APP */
 .app {
     max-width: 600px;
     margin: auto;
@@ -20,6 +21,7 @@ body {
     flex-direction: column;
 }
 
+/* HEADER */
 .header {
     padding: 15px;
     font-weight: bold;
@@ -28,28 +30,18 @@ body {
     border-bottom: 1px solid #ddd;
 }
 
+/* CHAT */
 .chat {
     flex: 1;
     overflow-y: auto;
     padding: 15px;
 }
 
-/* ANIMACIÓN MENSAJES */
+/* MENSAJES */
 .message {
     display: flex;
     margin-bottom: 12px;
     animation: fadeIn 0.25s ease;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(6px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .user {
@@ -57,9 +49,12 @@ body {
 }
 
 .bubble {
-    padding: 10px;
+    padding: 10px 12px;
     border-radius: 14px;
     max-width: 75%;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 .user .bubble {
@@ -86,6 +81,13 @@ input {
     border: 1px solid #ccc;
 }
 
+input:focus {
+    border-color: #007aff;
+    box-shadow: 0 0 0 2px rgba(0,122,255,0.2);
+    outline: none;
+}
+
+/* BOTÓN */
 button {
     background: #007aff;
     color: white;
@@ -102,11 +104,22 @@ button:active {
 /* LOADER */
 .loader {
     font-size: 14px;
-    padding-left: 10px;
-    display: none;
+    padding: 10px;
+    opacity: 0.7;
+}
+
+/* ANIMACIÓN */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 </style>
-
 </head>
 
 <body>
@@ -115,16 +128,18 @@ button:active {
 
 <div class="header">
     🤖 Mi IA
+    <button onclick="limpiar()">🗑</button>
 </div>
 
 <div id="chat" class="chat"></div>
 
-<div id="loader" class="loader">
+<div id="loader" class="loader" style="display:none;">
     IA escribiendo...
 </div>
 
 <div class="input-area">
-    <input id="input" placeholder="Escribe..." onkeydown="if(event.key=='Enter'){enviar()}">
+    <input id="input" placeholder="Pregúntame lo que quieras..."
+        onkeydown="if(event.key=='Enter'){enviar()}">
     <button onclick="enviar()">Enviar</button>
 </div>
 
@@ -132,10 +147,11 @@ button:active {
 
 <script>
 
+// ELEMENTOS
 var chat = document.getElementById("chat");
 var loader = document.getElementById("loader");
 
-// memoria
+// MEMORIA
 function getHist(){
     var data = localStorage.getItem("chat");
     if(!data) return [];
@@ -146,7 +162,7 @@ function setHist(h){
     localStorage.setItem("chat", JSON.stringify(h));
 }
 
-// render seguro
+// RENDER
 function render(){
 
     var h = getHist();
@@ -168,7 +184,7 @@ function render(){
     chat.scrollTop = chat.scrollHeight;
 }
 
-// enviar (VERSIÓN CORRECTA)
+// ENVIAR
 async function enviar(){
 
     var input = document.getElementById("input");
@@ -191,9 +207,7 @@ async function enviar(){
 
         var res = await fetch("/chat", {
             method: "POST",
-            headers: {
-                "Content-Type":"application/json"
-            },
+            headers: {"Content-Type":"application/json"},
             body: JSON.stringify({
                 texto: texto,
                 historial: hist
@@ -202,13 +216,9 @@ async function enviar(){
 
         var data = await res.json();
 
-        if (!data.respuesta){
-            throw new Error("Respuesta vacía");
-        }
-
         hist.push({
             role:"assistant",
-            content: data.respuesta
+            content: data.respuesta || "Error"
         });
 
     } catch(e){
@@ -228,11 +238,16 @@ async function enviar(){
     render();
 }
 
-// iniciar
+// LIMPIAR CHAT
+function limpiar(){
+    localStorage.removeItem("chat");
+    render();
+}
+
+// INICIO
 render();
 
 </script>
 
 </body>
 </html>
-``
