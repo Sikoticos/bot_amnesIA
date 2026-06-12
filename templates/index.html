@@ -34,7 +34,7 @@ body {
     padding: 15px;
 }
 
-/* animación */
+/* ANIMACIÓN MENSAJES */
 .message {
     display: flex;
     margin-bottom: 12px;
@@ -71,7 +71,7 @@ body {
     background: #ffffff;
 }
 
-/* input */
+/* INPUT */
 .input-area {
     display: flex;
     padding: 10px;
@@ -92,12 +92,18 @@ button {
     border: none;
     padding: 10px;
     border-radius: 12px;
+    cursor: pointer;
 }
 
-/* loader */
+button:active {
+    transform: scale(0.95);
+}
+
+/* LOADER */
 .loader {
     font-size: 14px;
     padding-left: 10px;
+    display: none;
 }
 </style>
 
@@ -113,7 +119,7 @@ button {
 
 <div id="chat" class="chat"></div>
 
-<div id="loader" class="loader" style="display:none;">
+<div id="loader" class="loader">
     IA escribiendo...
 </div>
 
@@ -142,10 +148,11 @@ function setHist(h){
 
 // render seguro
 function render(){
+
     var h = getHist();
     chat.innerHTML = "";
 
-    for(var i=0;i<h.length;i++){
+    for(var i=0; i<h.length; i++){
 
         var div = document.createElement("div");
         div.className = "message " + (h[i].role === "user" ? "user" : "ai");
@@ -161,7 +168,7 @@ function render(){
     chat.scrollTop = chat.scrollHeight;
 }
 
-// enviar
+// enviar (VERSIÓN CORRECTA)
 async function enviar(){
 
     var input = document.getElementById("input");
@@ -183,3 +190,49 @@ async function enviar(){
     try{
 
         var res = await fetch("/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type":"application/json"
+            },
+            body: JSON.stringify({
+                texto: texto,
+                historial: hist
+            })
+        });
+
+        var data = await res.json();
+
+        if (!data.respuesta){
+            throw new Error("Respuesta vacía");
+        }
+
+        hist.push({
+            role:"assistant",
+            content: data.respuesta
+        });
+
+    } catch(e){
+
+        hist.push({
+            role:"assistant",
+            content:"⚠️ Error conectando con la IA"
+        });
+
+        console.log("ERROR:", e);
+    }
+
+    setHist(hist);
+
+    loader.style.display = "none";
+
+    render();
+}
+
+// iniciar
+render();
+
+</script>
+
+</body>
+</html>
+``
