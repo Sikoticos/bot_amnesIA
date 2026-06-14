@@ -6,7 +6,7 @@ from openai import OpenAI
 app = Flask(__name__)
 app.secret_key = "clave_secreta_random_123"  # 🔐 cambia esto si quieres
 
-PASSWORD = "1234"  # 👈 TU CONTRASEÑA
+PASSWORD = "TeLeF@n05155"  # 👈 TU CONTRASEÑA
 
 NAN_API_KEY = os.getenv("NAN_API_KEY")
 
