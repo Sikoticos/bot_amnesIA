@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login</title>
+
+<style>
+body {
+    font-family: -apple-system;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100dvh;
+    background: #f2f2f7;
+}
+
+.login {
+    background: white;
+    padding: 25px;
+    border-radius: 16px;
+    width: 250px;
+    text-align: center;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+}
+
+button {
+    margin-top: 15px;
+    width: 100%;
+    padding: 10px;
+    background: #007aff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="login">
+    <h3>🔐 Acceso</h3>
+    <input id="pass" type="password" placeholder="Contraseña">
+    <button onclick="login()">Entrar</button>
+</div>
+
+<script>
+async function login(){
+    var password = document.getElementById("pass").value;
+
+    var res = await fetch("/login",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({password})
+    });
+
+    var data = await res.json();
+
+    if(data.ok){
+        window.location = "/";
+    } else {
+        alert("Contraseña incorrecta");
+    }
+}
+</script>
+
+</body>
+</html>
