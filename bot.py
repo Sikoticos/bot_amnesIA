@@ -4,12 +4,13 @@ from openai import OpenAI
 
 app = Flask(__name__)
 
-# 🔐 Clave de sesión (mejor ponerla en Railway como variable de entorno)
-app.secret_key = os.getenv("SECRET_KEY", "cambia_esto_por_una_clave_muy_larga_y_segura")
+# 🔐 CLAVE DE SESIÓN (OBLIGATORIA)
+app.secret_key = os.getenv("SECRET_KEY") or "clave_super_segura_12345"
 
-# 🔐 Contraseña de acceso (mejor ponerla en Railway como variable de entorno)
-PASSWORD = os.getenv("APP_PASSWORD", "cambia_esto_por_tu_password")
+# 🔐 PASSWORD
+PASSWORD = os.getenv("APP_PASSWORD") or "1234"
 
+# API KEY
 NAN_API_KEY = os.getenv("NAN_API_KEY")
 
 client = OpenAI(
@@ -19,8 +20,10 @@ client = OpenAI(
 
 SYSTEM_PROMPT = "Eres un asistente útil, claro y técnico."
 
+# ✅ LOGIN
 @app.route("/login", methods=["GET", "POST"])
 def login():
+
     if request.method == "POST":
         data = request.get_json(silent=True) or {}
         password = data.get("password", "")
@@ -34,21 +37,25 @@ def login():
     return render_template("login.html")
 
 
+# ✅ LOGOUT
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
 
 
+# ✅ HOME PROTEGIDO
 @app.route("/")
 def home():
     if not session.get("auth"):
-        return redirect(url_for("login"))
+        return redirect("/login")
     return render_template("index.html")
 
 
+# ✅ CHAT PROTEGIDO
 @app.route("/chat", methods=["POST"])
 def chat():
+
     if not session.get("auth"):
         return jsonify({"respuesta": "No autorizado"}), 401
 
@@ -65,6 +72,7 @@ def chat():
     for m in historial[-10:]:
         role = m.get("role")
         content = m.get("content")
+
         if role in ["user", "assistant"] and content:
             messages.append({
                 "role": role,
@@ -83,5 +91,6 @@ def chat():
     })
 
 
+# ✅ ARRANQUE CORRECTO
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000)
