@@ -61,6 +61,31 @@ body {
     background: white;
 }
 
+/* 🔥 BLOQUES DE CÓDIGO */
+.code-block {
+    background: #111;
+    color: #0f0;
+    padding: 10px;
+    border-radius: 10px;
+    margin-top: 8px;
+    font-family: monospace;
+    position: relative;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #333;
+    color: white;
+    border: none;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+/* INPUT */
 .input-area {
     display: flex;
     padding: 10px;
@@ -90,7 +115,6 @@ button {
     opacity: 0.7;
 }
 </style>
-
 </head>
 
 <body>
@@ -121,26 +145,71 @@ var chat = document.getElementById("chat");
 var loader = document.getElementById("loader");
 
 function getHist(){
-    var data = localStorage.getItem("chat");
-    return data ? JSON.parse(data) : [];
+    return JSON.parse(localStorage.getItem("chat") || "[]");
 }
 
 function setHist(h){
     localStorage.setItem("chat", JSON.stringify(h));
 }
 
+/* 🔥 DETECTAR BLOQUES DE CÓDIGO */
+function formatMessage(text){
+
+    if(text.includes("```")){
+        var parts = text.split("```");
+
+        var result = "";
+
+        for(let i=0;i<parts.length;i++){
+
+            if(i % 2 == 1){
+                result += `
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copiar(this)">Copiar</button>
+                    <pre>${escapeHTML(parts[i])}</pre>
+                </div>
+                `;
+            } else {
+                result += `<div>${escapeHTML(parts[i])}</div>`;
+            }
+        }
+
+        return result;
+    }
+
+    return escapeHTML(text);
+}
+
+function escapeHTML(text){
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+/* copiar */
+function copiar(btn){
+    var texto = btn.parentElement.innerText.replace("Copiar", "");
+    navigator.clipboard.writeText(texto);
+    btn.innerText = "Copiado ✅";
+    setTimeout(()=>btn.innerText="Copiar",1000);
+}
+
+/* render */
 function render(){
+
     var h = getHist();
     chat.innerHTML = "";
 
     for(var i=0;i<h.length;i++){
 
         var div = document.createElement("div");
-        div.className = "message " + (h[i].role === "user" ? "user" : "ai");
+        div.className = "message " + (h[i].role === "user" ? "user":"ai");
 
         var bubble = document.createElement("div");
         bubble.className = "bubble";
-        bubble.textContent = h[i].content;
+
+        bubble.innerHTML = formatMessage(h[i].content);
 
         div.appendChild(bubble);
         chat.appendChild(div);
@@ -149,7 +218,7 @@ function render(){
     chat.scrollTop = chat.scrollHeight;
 }
 
-/* ✅ ANIMACIÓN REAL SIN BLOQUEO */
+/* animación */
 async function typeWriter(text){
 
     var div = document.createElement("div");
@@ -170,24 +239,24 @@ async function typeWriter(text){
     for(let i=0;i<text.length;i++){
 
         current += text[i];
-        bubble.textContent = current;
 
-        // actualizar SOLO el último mensaje
+        bubble.innerHTML = escapeHTML(current);
+
         hist[hist.length - 1].content = current;
         setHist(hist);
 
-        // ✅ SCROLL FORZADO (clave para evitar “lag visual”)
         chat.scrollTop = chat.scrollHeight;
 
         let delay = 8;
-
-        if(text[i] === "." || text[i] === ",") delay = 30;
-        if(text[i] === "\n") delay = 20;
+        if(text[i] === "." || text[i] === ",") delay = 25;
 
         await new Promise(r => setTimeout(r, delay));
     }
+
+    bubble.innerHTML = formatMessage(text);
 }
 
+/* enviar */
 async function enviar(){
 
     var input = document.getElementById("input");
@@ -199,7 +268,7 @@ async function enviar(){
 
     var hist = getHist();
 
-    hist.push({role:"user",content:texto});
+    hist.push({role:"user", content:texto});
     setHist(hist);
 
     render();
@@ -239,3 +308,4 @@ render();
 
 </body>
 </html>
+``
